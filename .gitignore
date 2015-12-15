@@ -1,0 +1,10 @@
+.DS_store
+*.aux
+*.log
+*.toc
+*.nav
+*.vrb
+*.out
+*.pdf*
+*.snm
+*.gz
