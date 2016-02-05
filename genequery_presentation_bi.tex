@@ -39,7 +39,7 @@
 
 \begin{frame}{Описание проблемы}
   \begin{itemize}[<+->]
-    \item Провели эксперемент
+    \item Провели эксперимент
     \item Получили набор «проявивших» себя генов
     \item \alert{Как проинтерпретировать результат?}
   \end{itemize}
@@ -67,9 +67,27 @@
 \begin{frame}{Используемые данные}
   \begin{itemize}[<+->]
     \item Основан на базе данных GEO
-    \item Датасет содержит информацию об экспрессии генов $k$ фенотипов, участвовавших в эксперименте
+    \item Датасет содержит информацию об экспрессии генов $k$ образцов, участвовавших в эксперименте
     \item 6000 наиболее «активных» генов разбиты на кластеры алгоритмом WGCNA
-    \item Pathway экспрессий генов одного кластера \emph{совпадает} (up-/down-regulated)  
+    \item Pathway экспрессий генов одного кластера \emph{совпадает} (up-/down-regulated)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Кластеры}
+    \begin{figure}[p]
+        \centering
+        \caption{Теплокарта кластеров эксперимента}
+        \includegraphics[height=0.8\textheight]{./img/clasters.png}
+    \end{figure}      
+\end{frame}
+
+\begin{frame}{Используемые данные}
+  \begin{itemize}[<+->]
+    \item Произвели поиск по GEO (от 8 до 100 образцов в эксперименте, microarray)
+    \item Выкачали GPL, отфильтровали по ряду принзнаков (частота встречаемости)
+    \item Выкачали все GSE для оставшихся GPL
+    \item Preprocessing (лог-нормализация, sanity checks)
+    \item 3k для мышей, 3.8k для человека
     \item $\sim$ 50k кластеров для мышки, $\sim$ 80k --- для человека
   \end{itemize}
 \end{frame}
@@ -131,7 +149,7 @@
     \item Ген уникально идентифицируется своим \emph{Entrez ID} --- неким натуральным числом
     \item Запрос --- набор генов ненулевого размера
     \item Модуль --- кластер после работы алгоритма WGCNA
-    \item GSE --- все кластеры какого-либо эксперимента (с $k$ фенотипами)
+    \item GSE --- все кластеры какого-либо эксперимента (с $k$ образцами)
   \end{itemize}
 \end{frame}
 
@@ -140,6 +158,10 @@
     \item Пусть имеется некоторый набор генов (запрос)
     \item Зафиксируем какой-либо модуль из нашей базы данных
     \item Найдем пересечение запроса и модуля
+    \begin{figure}[ht]
+        \centering
+        \includegraphics[height=0.5\textheight]{./img/venn.png}
+    \end{figure}
     \item \emph{Какова вероятность получить получить именно такое пересечение?}
     \item Гипергеометрическое распределение
   \end{itemize}
@@ -272,9 +294,9 @@
 \begin{frame}{Проблема множественных сравнений}
   \begin{itemize}[<+->]
     \item Статистический тест дает точный результат при \emph{одном} испытании
-    \item При увеличении количества испытаний вероятность \emph{случайно} получить низкий $p_{value}$ (т.е. значимый результ) возрастает
+    \item При увеличении количества испытаний вероятность \emph{случайно} получить низкий $p_{value}$ (т.е. значимый результат) возрастает
     \item Поправка Бонферрони решает проблему, но грубо:
-    $$\hat{p_i} = p_i \times m$$, где $m$ --- количество испытаний, $p_i$ --- значимость результата $i$-го испытания, $\hat{p_i}$ --- новоя значимость
+    $$\hat{p_i} = p_i \cdot m$$, где $m$ --- количество испытаний, $p_i$ --- значимость результата $i$-го испытания, $\hat{p_i}$ --- новая значимость
   \end{itemize}
 \end{frame}
 
@@ -367,236 +389,181 @@
 
 \section{Уточнение модели}
 
-\begin{frame}{Все плохо}
-  \begin{itemize}[<+->]
-    \item описать, как все плохо
-  \end{itemize}
+\begin{frame}{Распределение частот генов в базе GeneQuery}
+    \begin{itemize}[<+->]
+	    \item Для каждого гена $g_i$ посчитаем количество вхождений в БД $freq(g_i)$
+	    \item Это равно количеству GSE, в которых ген себя «проявил»
+	    \item Занумеруем гены по невозрастанию их частот: $i \ge j \Rightarrow freq(g_i) \le freq(g_j)$
+	    \item Определим вероятность появления гена: 
+	        $$p(g_i) = \frac{freq(g_i)}{\sum\limits_{j}{freq(g_j)}} = \frac{freq(g_i)}{\sum\limits_{m \in Modules}{length(m)}}$$
+	 \end{itemize}
+\end{frame}
+
+\begin{frame}{Распределение частот генов в базе GeneQuery}
+    \begin{figure}[p]
+        \centering
+        \caption{Зависимость частоты гена от его номера.}
+        \includegraphics[height=0.8\textheight]{./img/gene_position_to_freq.jpeg}
+    \end{figure}
+\end{frame}
+
+\begin{frame}{Распределение частот генов в базе GeneQuery}
+    \begin{figure}[p]
+        \centering
+        \caption{Плотность распределения частот генов для мыши.}
+        \includegraphics[height=0.8\textheight]{./img/gene_freq_density_mm.jpeg}
+    \end{figure}
+\end{frame}
+
+\begin{frame}{Bootstrapping для разных страт}
+    \begin{itemize}[<+->]
+	    \item \emph{Страта} --- набор генов с частотами в определенном интервале
+	    \item Разделим множество генов на страты 1-1000, 1000-2000, 2000-3000 и 3000-4000 (последний только для человека)
+	    \item Bootstrapping для каждой страты
+	    \item Построим регрессию $log(\mathsf{min}(p_{value})) \sim \mathsf{size}$
+	 \end{itemize}
+\end{frame}
+
+\begin{frame}{Bootstrapping для страт}
+    \begin{figure}[ht]
+        \centering
+        \caption{Регрессии для страт (первая страта --- из самых частых генов).}
+        \includegraphics[height=0.75\textheight]{./img/mean_regression_all_strats_compare.jpeg}
+    \end{figure}
+\end{frame}
+
+\begin{frame}
+    \begin{figure}[p]
+        \centering
+        \includegraphics[width=0.5\textwidth]{./img/wut.jpeg}
+    \end{figure}
+\end{frame}
+
+\begin{frame}{Резюмируем проблему}
+    \begin{itemize}[<+->]
+	    \item Частые гены «искусственно» увеличивают значимость пересечения
+	    \item Хочется учитывать частоту гена при вычислении значимости (т.е. ранжировании результатов)
+	    \item В идеале регрессия не должна зависеть от частот генов из запросов
+	 \end{itemize}
+\end{frame}
+
+\begin{frame}{Идея решения: начальные условия}
+    \begin{itemize}[<+->]
+	    \item Распределение частот в БД \emph{не является моделью «внешнего мира»}
+	    \item Гены в запросе \emph{независимы в совокупности}
+	 \end{itemize}
+\end{frame}
+
+\begin{frame}{Идея решения: общий вид}
+    Для фиксированного модуля и запроса:
+    \begin{equation}
+        f(p_{value}(I)) \cdot w(I)
+    \end{equation}
+    \begin{description}
+        \item $I = (g_1, g_2, \dots, g_n)$ --- пересечение генов модуля и запроса
+        \item $f(I)$ --- некая функция от $p_{value}$ (логарифм в нашем случае), полученного точным тестом Фишера (не учитывает распределение генов)
+        \item $w(I)$ --- некая функция, зависящая от распределения генов из $I$, отражающая \alert<2>{«информативность»} пересечения
+    \end{description}
+\end{frame}
+
+\begin{frame}{Информативность}
+    \begin{itemize}[<+->]
+        \item Пусть имеется некий набор генов
+	    \item Интуитивно: \emph{чем больше частых генов в наборе, тем меньше информативность всего набора}
+	    \item Как это записать аналитически?
+	    \item Энтропия
+	 \end{itemize}
+\end{frame}
+
+\begin{frame}{Энтропия}
+    \begin{itemize}[<+->]
+        \item Мера информации: чем больше энтропия, тем меньше информации
+        \item Энтропия гена:
+            $$\mathcal{H}(g) = -p(g) log(p(g))$$
+	    \item Энтропия набора генов:
+	        $$\mathcal{H}(I) = \sum\limits_{g \in I}{\mathcal{H}(g)} = \sum\limits_{g \in I}{-p(g) log(p(g))}$$,
+	        так как гены из $I$ независимы в совокупности
+	    \item Общий вид функции информативности:
+	        $$w(I) \sim \hat{w}(\frac{1}{\mathcal{H}(I)})$$,
+	        чем больше редких генов в $I$, тем меньше энтропия, тем больше значение функции
+	 \end{itemize}
+\end{frame}
+
+\begin{frame}{Общий вид значимости пересечения}
+    \begin{equation}
+        f(p_{value}(I)) \cdot w(I) = f(p_{value}(I)) \cdot \hat{w}(\frac{1}{\mathcal{H}(I)})
+    \end{equation}
+    где $\hat{w}$ монотонно не убывает
+\end{frame}
+
+\begin{frame}{Интерпретация новой значимости}
+    \begin{itemize}[<+->]
+        \item (значимость получить пересечение заданного размера) $\times$ (значимость генов внутри пересечения)
+	    \item Подбор вида функции $\hat{w}$ так, чтобы компенсировать расхождения из-за частот генов
+	    \item Значения новой значимости должны иметь параметрическое распределение (или приближаться им)
+	 \end{itemize}
 \end{frame}
 
 \section{Аннотация генов}
-\section{Ортология}
 
-
-
-\begin{frame}[fragile]
-  \frametitle{mtheme}
-
-  The \textsc{Metropolis} theme is a Beamer theme with minimal visual noise
-  inspired by the \href{https://github.com/hsrmbeamertheme/hsrmbeamertheme}{\textsc{hsrm} Beamer
-  Theme} by Benjamin Weiss.
-
-  Enable the theme by loading
-
-  \begin{verbatim}    \documentclass{beamer}
-    \usetheme{m}\end{verbatim}
-
-  Note, that you have to have Mozilla's \emph{Fira Sans} font and XeTeX
-  installed to enjoy this wonderful typography.
-\end{frame}
-\begin{frame}[fragile]
-  \frametitle{Sections}
-  Sections group slides of the same topic
-
-  \begin{verbatim}    \section{Elements}\end{verbatim}
-
-  for which \textsc{Metropolis} provides a nice progress indicator \ldots
-\end{frame}
-
-\section{Elements}
-
-\begin{frame}[fragile]
-  \frametitle{Typography}
-      \begin{verbatim}The theme provides sensible defaults to
-\emph{emphasize} text, \alert{accent} parts
-or show \textbf{bold} results.\end{verbatim}
-
-  \begin{center}becomes\end{center}
-
-  The theme provides sensible defaults to \emph{emphasize} text,
-  \alert{accent} parts or show \textbf{bold} results.
-\end{frame}
-\begin{frame}{Lists}
-  \begin{columns}[T,onlytextwidth]
-    \column{0.33\textwidth}
-      Items
-      \begin{itemize}
-        \item Milk \item Eggs \item Potatos
-      \end{itemize}
-
-    \column{0.33\textwidth}
-      Enumerations
-      \begin{enumerate}
-        \item First, \item Second and \item Last.
-      \end{enumerate}
-
-    \column{0.33\textwidth}
-      Descriptions
-      \begin{description}
-        \item[PowerPoint] Meeh. \item[Beamer] Yeeeha.
-      \end{description}
-  \end{columns}
-\end{frame}
-\begin{frame}{Animation}
-  \begin{itemize}[<+- | alert@+>]
-    \item \alert<4>{This is\only<4>{ really} important}
-    \item Now this
-    \item And now this
+\begin{frame}{Аннотация генов}
+  \begin{itemize}[<+->]
+    \item Существует множество GPL платформ для аннотации генов
+    \item Ген аннотируется в один или несколько id разных видов (Symbol, Ensembl, etc)
+    \item Нет уникального соответствия между разными видами id
+    \item Entrez --- натуральное число, уникальное для \emph{каждого} гена среди \emph{всех} организмов
   \end{itemize}
 \end{frame}
-\begin{frame}{Figures}
-  \begin{figure}
-    \newcounter{density}
-    \setcounter{density}{20}
-    \begin{tikzpicture}
-      \def\couleur{alerted text.fg}
-      \path[coordinate] (0,0)  coordinate(A)
-                  ++( 90:5cm) coordinate(B)
-                  ++(0:5cm) coordinate(C)
-                  ++(-90:5cm) coordinate(D);
-      \draw[fill=\couleur!\thedensity] (A) -- (B) -- (C) --(D) -- cycle;
-      \foreach \x in {1,...,40}{%
-          \pgfmathsetcounter{density}{\thedensity+20}
-          \setcounter{density}{\thedensity}
-          \path[coordinate] coordinate(X) at (A){};
-          \path[coordinate] (A) -- (B) coordinate[pos=.10](A)
-                              -- (C) coordinate[pos=.10](B)
-                              -- (D) coordinate[pos=.10](C)
-                              -- (X) coordinate[pos=.10](D);
-          \draw[fill=\couleur!\thedensity] (A)--(B)--(C)-- (D) -- cycle;
-      }
-    \end{tikzpicture}
-    \caption{Rotated square from
-    \href{http://www.texample.net/tikz/examples/rotated-polygons/}{texample.net}.}
-  \end{figure}
-\end{frame}
-\begin{frame}{Tables}
-  \begin{table}
-    \caption{Largest cities in the world (source: Wikipedia)}
-    \begin{tabular}{lr}
-      \toprule
-      City & Population\\
-      \midrule
-      Mexico City & 20,116,842\\
-      Shanghai & 19,210,000\\
-      Peking & 15,796,450\\
-      Istanbul & 14,160,467\\
-      \bottomrule
-    \end{tabular}
-  \end{table}
-\end{frame}
-\begin{frame}{Blocks}
-  Three different block environments are pre-defined and may be styled with an
-  optional background color.
 
-  \begin{columns}[T,onlytextwidth]
-    \column{0.5\textwidth}
-      \begin{block}{Default}
-        Block content.
-      \end{block}
-
-      \begin{alertblock}{Alert}
-        Block content.
-      \end{alertblock}
-
-      \begin{exampleblock}{Example}
-        Block content.
-      \end{exampleblock}
-
-    \column{0.5\textwidth}
-
-      \metroset{block=fill}
-
-      \begin{block}{Default}
-        Block content.
-      \end{block}
-
-      \begin{alertblock}{Alert}
-        Block content.
-      \end{alertblock}
-
-      \begin{exampleblock}{Example}
-        Block content.
-      \end{exampleblock}
-
-  \end{columns}
-\end{frame}
-\begin{frame}{Math}
-  \begin{equation*}
-    e = \lim_{n\to \infty} \left(1 + \frac{1}{n}\right)^n
-  \end{equation*}
-\end{frame}
-\begin{frame}{Line plots}
-  \begin{figure}
-    \begin{tikzpicture}
-      \begin{axis}[
-        mlineplot,
-        width=0.9\textwidth,
-        height=6cm,
-      ]
-
-        \addplot {sin(deg(x))};
-        \addplot+[samples=100] {sin(deg(2*x))};
-
-      \end{axis}
-    \end{tikzpicture}
-  \end{figure}
-\end{frame}
-\begin{frame}{Bar charts}
-  \begin{figure}
-    \begin{tikzpicture}
-      \begin{axis}[
-        mbarplot,
-        xlabel={Foo},
-        ylabel={Bar},
-        width=0.9\textwidth,
-        height=6cm,
-      ]
-
-      \addplot plot coordinates {(1, 20) (2, 25) (3, 22.4) (4, 12.4)};
-      \addplot plot coordinates {(1, 18) (2, 24) (3, 23.5) (4, 13.2)};
-      \addplot plot coordinates {(1, 10) (2, 19) (3, 25) (4, 15.2)};
-
-      \legend{lorem, ipsum, dolor}
-
-      \end{axis}
-    \end{tikzpicture}
-  \end{figure}
-\end{frame}
-\begin{frame}{Quotes}
-  \begin{quote}
-    Veni, Vidi, Vici
-  \end{quote}
+\begin{frame}
+    \begin{figure}[!ht]
+        \centering
+        \caption{Conversion flow.}
+        \includegraphics[height=0.9\textheight]{./img/conversion.png}
+    \end{figure}
 \end{frame}
 
-\begin{frame}{References}
-  Some references to showcase [allowframebreaks] \cite{knuth92,ConcreteMath,Simpson,Er01,greenwade93}
+\begin{frame}{Детализация конвертации в GeneQuery}
+    \begin{figure}[p]
+        \centering
+        \caption{Детализация конвертации генов.}
+        \includegraphics[height=0.8\textheight]{./img/screen_details.png}
+    \end{figure}
 \end{frame}
 
-\section{Conclusion}
 
-\begin{frame}{Summary}
+\section{Ортология}
 
-  Get the source of this theme and the demo presentation from
-
-  \begin{center}\url{github.com/matze/mtheme}\end{center}
-
-  The theme \emph{itself} is licensed under a
-  \href{http://creativecommons.org/licenses/by-sa/4.0/}{Creative Commons
-  Attribution-ShareAlike 4.0 International License}.
-
-  \begin{center}\ccbysa\end{center}
-
+\begin{frame}{Что это и зачем}
+  \begin{itemize}[<+->]
+    \item \emph{Ортология} --- раздел генетики, изучающий свойства генов разных особей, происшедших от одного общего предка
+    \item Хочется искать модули одного организма по генам другого
+    \item Указываем организм запроса и организм области поиска
+        \begin{figure}[!ht]
+            \centering
+            \includegraphics[width=0.6\textwidth]{./img/screen_query_orthology.png}
+        \end{figure}
+  \end{itemize}
 \end{frame}
 
-\plain{Questions?}
-
-\begin{frame}[allowframebreaks]
-
-  \frametitle{References}
-
-  \bibliography{demo}
-  \bibliographystyle{abbrv}
-
+\begin{frame}{Homology}
+    \begin{figure}[p]
+        \centering
+        \caption{Трансляция генов разных организмов.}
+        \includegraphics[height=0.8\textheight]{./img/homology_diagramm.png}
+    \end{figure}
 \end{frame}
+
+\begin{frame}{Homology в GeneQuery}
+    \begin{figure}[p]
+        \centering
+        \caption{Общий вид трансляции генов разных организмов.}
+        \includegraphics[height=0.8\textheight]{./img/homology.png}
+    \end{figure}
+\end{frame}
+
+
+
+\plain{Вопросы?}
 
 \end{document}
